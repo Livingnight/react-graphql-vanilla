@@ -7,8 +7,8 @@ const Organization = props => {
             <div>
                 <p>
                     <strong>Something Went Wrong:</strong>
-                    {props.errors.map(error => error.message).join(' ')}
                 </p>
+                {props.errors.map(error => error.message).join(' ')}
            </div>
         )
     }
@@ -16,12 +16,13 @@ const Organization = props => {
         <div>
             <p>
                 <strong>Issues from the organization:</strong>
-                <a href={props.organization.url}>{props.organization.name}</a>
-                <Repository 
+            </p>
+            <a href={props.organization.url}>{props.organization.name}</a>
+            <Repository 
                 repository={props.organization.repository}
                 onFetchMoreIssues={props.onFetchMoreIssues}
+                onStarRepository={props.onStarRepository}
                 />
-            </p>
         </div>
     )
     

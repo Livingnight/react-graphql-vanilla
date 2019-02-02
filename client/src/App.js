@@ -2,6 +2,9 @@ import React, { Component } from 'react';
 import axios from 'axios';
 import Form from './Components/form/form';
 import Organization from './Components/organization/organization';
+import { GET_ISSUES_OF_REPO } from './graphql/queries'
+import { ADD_STAR, REMOVE_STAR } from './graphql/mutations';
+import { resolveAddStarMutation, resolveIssuesQuery, resolveRemoveStarMutation } from './graphql/resolvers';
 
 const Title = `React GraphQL Github Client`
 const axiosGitHubGraphQL = axios.create({
@@ -11,47 +14,6 @@ const axiosGitHubGraphQL = axios.create({
   },
 })
 
-
-const GET_ISSUES_OF_REPO = `
-  query (
-    $organization: String!, 
-    $repository: String!
-    $cursor: String
-  ) {
-    organization(login: $organization) {
-      name
-      url
-      repository(name: $repository) {
-        name
-        url
-        issues(last: 5, after: $cursor, states: [OPEN]) {
-          edges {
-            node {
-              id
-              title
-              url
-              reactions (last: 3){
-                edges {
-                  node {
-                    id 
-                    content
-                  }
-                }
-              }
-            }
-          }
-          totalCount
-          pageInfo {
-            endCursor
-            hasNextPage
-            
-          }
-        }
-      }
-    }
-  }
-`;
-
 const getIssuesOfRepo = (path, cursor) => {
   const [ organization, repository ] = path.split('/');
 
@@ -59,11 +21,6 @@ const getIssuesOfRepo = (path, cursor) => {
     query: GET_ISSUES_OF_REPO,
     variables: {organization, repository, cursor}
   })}
-
-const resolveIssuesQuery = queryResult => ({
-  organization: queryResult.data.data.organization,
-  errors: queryResult.data.errors
-})
 
 class App extends Component {
   state = {
@@ -92,11 +49,42 @@ class App extends Component {
   }
 
   onFetchMoreIssues = () => {
-    const { 
-      endCursor 
-    } = this.state.organization.repository.issues.cursor;
-
+    const { endCursor } = this.state.organization.repository.issues.pageInfo;
+    
     this.onFetchFromGitHub(this.state.path, endCursor)
+  };
+
+  addStarToRepository = repositoryId => {
+    return axiosGitHubGraphQL.post('', {
+      query: ADD_STAR,
+      variables: {repositoryId},
+    })
+  }
+
+  removeStarFromRepo = repositoryId => {
+    return axiosGitHubGraphQL.post('', {
+      query: REMOVE_STAR,
+      variables: {repositoryId}
+    })
+  }
+
+  onStarRepository = (repositoryId, viewerHasStarred) => {
+    if(viewerHasStarred){
+      console.log("viewerHasStarred: ", viewerHasStarred, "removing")
+      this.removeStarFromRepo(repositoryId).then( mutationResult => {
+        console.log("removing star!")
+        this.setState(resolveRemoveStarMutation(mutationResult))
+      })
+    }
+    else{
+      console.log("viewerHasStarred: ", viewerHasStarred, "adding")
+      this.addStarToRepository(repositoryId).then(
+        mutationResult => {
+        console.log("made it this far!")
+
+        this.setState(resolveAddStarMutation(mutationResult))
+      });
+    }
   };
 
   render() {
@@ -114,6 +102,7 @@ class App extends Component {
         organization={organization} 
         errors={errors}
         onFetchMoreIssues={this.onFetchMoreIssues}
+        onStarRepository={this.onStarRepository}
         />
         ) : (
           <p> No information yet... </p>

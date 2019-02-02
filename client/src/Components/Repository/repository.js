@@ -1,13 +1,14 @@
 import React from 'react';
 
 const Repository = props => (
-
+    
     <div>
         <p>
             <strong>In Repository:</strong>
             <a href={props.repository.url}> {props.repository.name} </a>
         </p>
         <ul>
+            {console.log(props.repository.issues.edges)}
             {props.repository.issues.edges.map(issue => (
                 <li key={issue.node.id}>
                     <a href={issue.node.url}>{issue.node.title}</a>
@@ -20,7 +21,17 @@ const Repository = props => (
                 </li>
             ))}
         </ul>
-        <button onClick={props.onFetchMoreIssues}>More</button>
+        {props.repository.issues.pageInfo.hasNextPage && (
+            <button onClick={props.onFetchMoreIssues}>More</button>
+        )}
+        <button
+            type="button"
+            onClick={ () => props.onStarRepository(props.repository.id, props.repository.viewerHasStarred)}
+        >
+            {props.repository.stargazers.totalCount}
+            {props.repository.viewerHasStarred ? 'Unstar' : 'Star' }
+        </button>
+        
     </div>
 )
 
